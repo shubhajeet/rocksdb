@@ -2409,7 +2409,7 @@ class Stats {
                   dbstats->getTickerCount(NUMBER_BLOCK_COMPRESSION_BYPASSED);
               fprintf(stderr,
                       "%s ... thread %d: compressed: %" PRIu64
-                      " rejected: %" PRIu64 "bypassed: %" PRIu64 "\n",
+                      " rejected: %" PRIu64 " bypassed: %" PRIu64 "\n",
                       clock_->TimeToString(now / 1000000).c_str(), id_,
                       compressed, rejected, bypassed);
             } else {
