@@ -2034,8 +2034,8 @@ TEST_F(DBAutoTuneCompressionTest, AutoTuneCompression) {
   }
 }
 TEST(DynamicBudgetTest, ChangesBudgetOnOffPeakTime) {
-  // This test case verifies that the budget is changed when the write stall
-  // detection is triggered
+  // This test case verifies that the budget is changed during offpeak time
+  // period
   auto io_lower_bound = 0.5;
   auto io_upper_bound = 0.7;
   auto offpeak_lower_bound = 0.7;
@@ -2043,14 +2043,14 @@ TEST(DynamicBudgetTest, ChangesBudgetOnOffPeakTime) {
   auto io_goal_no_peak =
       DynamicBudget(io_upper_bound, io_lower_bound, offpeak_upper_bound,
                     offpeak_lower_bound, "");
-  ASSERT_EQ(io_goal_no_peak.GetMaxRate(), io_upper_bound);
-  ASSERT_EQ(io_goal_no_peak.GetMinRate(), io_lower_bound);
+  EXPECT_EQ(io_goal_no_peak.GetMaxRate(), io_upper_bound);
+  EXPECT_EQ(io_goal_no_peak.GetMinRate(), io_lower_bound);
   // Trigger the start of write stall detection
   auto io_goal_with_peak =
       DynamicBudget(io_upper_bound, io_lower_bound, offpeak_upper_bound,
-                    offpeak_lower_bound, "0-24");
-  ASSERT_EQ(io_goal_with_peak.GetMaxRate(), offpeak_upper_bound);
-  ASSERT_EQ(io_goal_with_peak.GetMinRate(), offpeak_lower_bound);
+                    offpeak_lower_bound, "0:0-23:59");
+  EXPECT_EQ(io_goal_with_peak.GetMaxRate(), offpeak_upper_bound);
+  EXPECT_EQ(io_goal_with_peak.GetMinRate(), offpeak_lower_bound);
 }
 }  // namespace ROCKSDB_NAMESPACE
 int main(int argc, char** argv) {
