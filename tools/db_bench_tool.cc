@@ -624,6 +624,21 @@ DEFINE_double(autotune_cpu_lower_bound, 0.8,
               "Autotune compression manager tries to use CPU under the given "
               "minimum CPU budget");
 
+DEFINE_string(offpeak_time, "", "Off peak time");
+DEFINE_double(offpeak_io_upper_bound, 0.99,
+              "Ratio of rate_limiter budget to set as IO goal for autotune "
+              "compression manager during offpeak period");
+DEFINE_double(
+    offpeak_io_lower_bound, 0.9,
+    "Ratio of rate_limiter budget to set as minimum IO goal for autotune "
+    "compression manager during offpeak period");
+DEFINE_double(offpeak_cpu_upper_bound, 1.0,
+              "Autotune compression manager tries to use CPU under the given "
+              "CPU budget during offpeak period");
+DEFINE_double(offpeak_cpu_lower_bound, 0.8,
+              "Autotune compression manager tries to use CPU under the given "
+              "minimum CPU budget during offpeak period");
+
 DEFINE_int32(compressed_secondary_cache_compression_level,
              ROCKSDB_NAMESPACE::CompressionOptions().level,
              "Compression level. The meaning of this value is library-"
@@ -4700,21 +4715,6 @@ class Benchmark {
       mgr = CreateAutoTuneCompressionManager(nullptr, io_goal, cpu_budget,
                                              options);
     } else if (!strcasecmp(FLAGS_compression_manager.c_str(),
-                           "autotunecompression")) {
-      auto ratelimiter_throughput = FLAGS_rate_limiter_bytes_per_sec;
-      double io_upper_bound =
-          FLAGS_autotune_io_upper_bound * ratelimiter_throughput;
-      double io_lower_bound =
-          FLAGS_autotune_io_lower_bound * ratelimiter_throughput;
-      double cpu_upper_bound = FLAGS_autotune_cpu_upper_bound;
-      double cpu_lower_bound = FLAGS_autotune_cpu_lower_bound;
-      std::shared_ptr<IOGoal> io_goal =
-          std::make_shared<IOGoal>(io_upper_bound, io_lower_bound);
-      std::shared_ptr<CPUBudget> cpu_budget =
-          std::make_shared<CPUBudget>(cpu_upper_bound, cpu_lower_bound);
-      mgr = CreateAutoTuneCompressionManager(nullptr, io_goal, cpu_budget,
-                                             options);
-    } else if (!strcasecmp(FLAGS_compression_manager.c_str(),
                            "dynamicautotunecompressor")) {
       auto ratelimiter_throughput = FLAGS_rate_limiter_bytes_per_sec;
       double io_upper_bound =
@@ -4723,13 +4723,21 @@ class Benchmark {
           FLAGS_autotune_io_lower_bound * ratelimiter_throughput;
       double cpu_upper_bound = FLAGS_autotune_cpu_upper_bound;
       double cpu_lower_bound = FLAGS_autotune_cpu_lower_bound;
+      double offpeak_io_upper_bound =
+          FLAGS_offpeak_io_upper_bound * ratelimiter_throughput;
+      double offpeak_io_lower_bound =
+          FLAGS_offpeak_io_lower_bound * ratelimiter_throughput;
+      double offpeak_cpu_upper_bound = FLAGS_offpeak_cpu_upper_bound;
+      double offpeak_cpu_lower_bound = FLAGS_offpeak_cpu_lower_bound;
+      auto peakofftime = FLAGS_offpeak_time;
+      options.daily_offpeak_time_utc = peakofftime;
       std::shared_ptr<DynamicBudget> io_goal = std::make_shared<DynamicBudget>(
-          io_upper_bound, io_lower_bound, ratelimiter_throughput,
-          io_upper_bound, "");
+          io_upper_bound, io_lower_bound, offpeak_io_upper_bound,
+          offpeak_io_lower_bound, peakofftime);
       std::shared_ptr<DynamicBudget> cpu_budget =
-          std::make_shared<DynamicBudget>(cpu_upper_bound, cpu_lower_bound, 1.0,
-                                          cpu_upper_bound,
-                                          options.daily_offpeak_time_utc);
+          std::make_shared<DynamicBudget>(cpu_upper_bound, cpu_lower_bound,
+                                          offpeak_cpu_upper_bound,
+                                          offpeak_cpu_lower_bound, peakofftime);
       options.listeners.emplace_back(io_goal);
       options.listeners.emplace_back(cpu_budget);
       mgr = CreateAutoTuneCompressionManager(nullptr, io_goal, cpu_budget,
