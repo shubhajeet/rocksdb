@@ -128,8 +128,18 @@ std::unique_ptr<Compressor> AutoSkipCompressorManager::GetCompressorForSST(
     CompressionType preferred) {
   assert(GetSupportedCompressions().size() > 1);
   assert(preferred != kNoCompression);
-  return std::make_unique<AutoSkipCompressorWrapper>(
-      wrapped_->GetCompressorForSST(context, opts, preferred), opts);
+  auto wrapped_compressor =
+      wrapped_->GetCompressorForSST(context, opts, preferred);
+  if (wrapped_compressor == nullptr) {
+    printf(
+        "AutoSkipCompressorManager::GetCompressorForSST encountered "
+        "wrapped_compressor as null preferred compression type: %d\n",
+        preferred);
+    return nullptr;
+  } else {
+    return std::make_unique<AutoSkipCompressorWrapper>(
+        wrapped_->GetCompressorForSST(context, opts, preferred), opts);
+  }
 }
 
 CostAwareCompressor::CostAwareCompressor(const CompressionOptions& opts)
